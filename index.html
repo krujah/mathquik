@@ -544,21 +544,156 @@ const OCEAN_SVG = `
 </svg>`;
 
 /* ===== LOGIN ===== */
+// รายชื่อนักเรียนที่ฝังไว้ในโค้ดโดยตรง (แก้ไข/เพิ่ม/ลบได้ตรงนี้เลย)
+// รูปแบบ: { studentId: "รหัส", name: "ชื่อ-นามสกุล", klass: "ชั้นเรียน" }
+const EMBEDDED_ROSTER = [
+  {
+    "studentId": "1",
+    "name": "เด็กชายพงศกร รูปคม",
+    "klass": "ป.6/1"
+  },
+  {
+    "studentId": "2",
+    "name": "เด็กชายธันวา ไฉนวงษ์",
+    "klass": "ป.6/1"
+  },
+  {
+    "studentId": "3",
+    "name": "เด็กชายนันทวัฒน์ กุจะพันธ์",
+    "klass": "ป.6/1"
+  },
+  {
+    "studentId": "4",
+    "name": "เด็กชายนิวัฒน์ สันหลี",
+    "klass": "ป.6/1"
+  },
+  {
+    "studentId": "5",
+    "name": "เด็กชายบาซิล เส็มสแอ",
+    "klass": "ป.6/1"
+  },
+  {
+    "studentId": "6",
+    "name": "เด็กชายมานพ บนหลี",
+    "klass": "ป.6/1"
+  },
+  {
+    "studentId": "7",
+    "name": "เด็กชายพิชญุตม์ นิลสกุล",
+    "klass": "ป.6/1"
+  },
+  {
+    "studentId": "8",
+    "name": "เด็กชายณัฐชนนท์ บุญเสน",
+    "klass": "ป.6/1"
+  },
+  {
+    "studentId": "9",
+    "name": "เด็กชายภูมิรพี โสะนุ้ย",
+    "klass": "ป.6/1"
+  },
+  {
+    "studentId": "10",
+    "name": "เด็กชายธันวรินทร์ เวชสิทธิ์",
+    "klass": "ป.6/1"
+  },
+  {
+    "studentId": "11",
+    "name": "เด็กชายพิชญะ นิตยวัน",
+    "klass": "ป.6/1"
+  },
+  {
+    "studentId": "12",
+    "name": "เด็กหญิงจารุมน หมาดอี",
+    "klass": "ป.6/1"
+  },
+  {
+    "studentId": "13",
+    "name": "เด็กหญิงจิรภิญญา หวันตาหลา",
+    "klass": "ป.6/1"
+  },
+  {
+    "studentId": "14",
+    "name": "เด็กหญิงณัฐยวา หมัดหลง",
+    "klass": "ป.6/1"
+  },
+  {
+    "studentId": "15",
+    "name": "เด็กหญิงณิชนันท์ สุวามีน",
+    "klass": "ป.6/1"
+  },
+  {
+    "studentId": "16",
+    "name": "เด็กหญิงนริศรา สมสู",
+    "klass": "ป.6/1"
+  },
+  {
+    "studentId": "17",
+    "name": "เด็กหญิงปนัดดา ส่งข่าว",
+    "klass": "ป.6/1"
+  },
+  {
+    "studentId": "18",
+    "name": "เด็กหญิงรณิดา ดาษดา",
+    "klass": "ป.6/1"
+  },
+  {
+    "studentId": "19",
+    "name": "เด็กหญิงวาอาดา สันหลี",
+    "klass": "ป.6/1"
+  },
+  {
+    "studentId": "20",
+    "name": "เด็กหญิงสุไรญา โพธิ์ทอง",
+    "klass": "ป.6/1"
+  },
+  {
+    "studentId": "21",
+    "name": "เด็กหญิงอัซวานี ยาบา",
+    "klass": "ป.6/1"
+  },
+  {
+    "studentId": "22",
+    "name": "เด็กหญิงฟิรฮานา เร๊ะนุ้ย",
+    "klass": "ป.6/1"
+  },
+  {
+    "studentId": "23",
+    "name": "เด็กหญิงปิยนุช เฉียหม่อง",
+    "klass": "ป.6/1"
+  },
+  {
+    "studentId": "24",
+    "name": "เด็กหญิงธัญญรัตน์ โต๊ะล๊ะ",
+    "klass": "ป.6/1"
+  },
+  {
+    "studentId": "25",
+    "name": "ด.ช.ภทรธร ลิ่มหลัก",
+    "klass": "ป.6/1"
+  }
+];
+
 let rosterData = [];
 let rosterLoaded = false;
 
 async function loadRoster(){
+  // เริ่มจากรายชื่อที่ฝังไว้ในโค้ดก่อนเสมอ ใช้งานได้ทันทีไม่ต้องรอเน็ตเวิร์ก
+  rosterData = EMBEDDED_ROSTER.slice();
+  rosterLoaded = true;
+  onClassChange();
+  // จากนั้นลองดึงรายชื่อเพิ่มเติมจาก Google Sheets (ถ้าครูเพิ่มผ่านแดชบอร์ดครู) มารวมด้วย
   try{
     const res = await API.getRoster();
     if(res && res.status === 'ok' && Array.isArray(res.roster)){
-      rosterData = res.roster;
-      rosterLoaded = true;
-    } else {
-      rosterData = [];
+      const merged = rosterData.slice();
+      res.roster.forEach(s => {
+        if(!merged.some(m => m.studentId === s.studentId)) merged.push(s);
+      });
+      rosterData = merged;
     }
   }catch(err){
-    console.warn('โหลดรายชื่อนักเรียนไม่สำเร็จ', err);
-    rosterData = [];
+    console.warn('โหลดรายชื่อเพิ่มเติมจากชีตไม่สำเร็จ (ใช้รายชื่อที่ฝังไว้ในโค้ดแทน)', err);
   }
   onClassChange();
 }
