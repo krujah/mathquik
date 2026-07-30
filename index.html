@@ -226,6 +226,25 @@ table.teacher-table{width:100%;border-collapse:collapse;font-size:13px;min-width
 .detail-chip.mastered{background:var(--gold);color:#fff;}
 .chapter-label{font-family:'Kanit';font-weight:600;font-size:13px;color:var(--sea-deep);margin:16px 0 4px;}
 .empty-state{text-align:center;padding:40px 20px;color:var(--sea-mid);font-size:14px;}
+
+/* Game mechanics */
+.rank-badge{font-size:11px;background:var(--gold);color:#fff;padding:2px 9px;border-radius:999px;font-family:'Kanit';font-weight:700;margin-left:6px;display:inline-block;vertical-align:middle;}
+.hud-coins{display:flex;align-items:center;gap:5px;font-family:'Kanit';font-weight:700;font-size:16px;color:#B9790A;
+  background:#FFF3D6;padding:5px 12px;border-radius:999px;transition:transform .15s;}
+.hud-coins.bump{animation:coinBump .35s;}
+@keyframes coinBump{0%{transform:scale(1);}45%{transform:scale(1.25);}100%{transform:scale(1);}}
+.hud-streak-row{text-align:center;min-height:20px;margin-bottom:4px;}
+.hud-streak{display:none;font-family:'Kanit';font-weight:700;font-size:13px;color:var(--coral-dark);}
+.hud-streak.show{display:inline-block;animation:streakPulse .4s;}
+@keyframes streakPulse{0%{transform:scale(0.7);opacity:0;}100%{transform:scale(1);opacity:1;}}
+.problem.shake{animation:shakeX .35s;}
+@keyframes shakeX{0%,100%{transform:translateX(0);}20%{transform:translateX(-8px);}40%{transform:translateX(8px);}60%{transform:translateX(-6px);}80%{transform:translateX(6px);}}
+.coin-fly{font-family:'Kanit';font-weight:700;color:var(--gold);font-size:13px;margin-left:6px;}
+
+.tier-wrap{font-size:56px;margin-bottom:2px;animation:tierPop .5s ease;}
+@keyframes tierPop{0%{transform:scale(0.4) rotate(-10deg);opacity:0;}60%{transform:scale(1.15) rotate(5deg);opacity:1;}100%{transform:scale(1) rotate(0);}}
+.coins-earned{font-family:'Kanit';font-weight:700;color:#B9790A;font-size:15px;margin-bottom:16px;
+  background:#FFF3D6;display:inline-block;padding:5px 16px;border-radius:999px;}
 </style>
 </head>
 <body>
@@ -238,26 +257,24 @@ table.teacher-table{width:100%;border-collapse:collapse;font-size:13px;min-width
       <div class="card login-card">
       <form id="loginForm" onsubmit="return handleLogin(event)">
         <div class="field">
-          <label for="studentId">รหัสประจำตัวนักเรียน</label>
-          <input type="text" id="studentId" placeholder="เช่น 12345" required autocomplete="off">
-        </div>
-        <div class="field">
-          <label for="studentName">ชื่อ-นามสกุล</label>
-          <input type="text" id="studentName" placeholder="ชื่อ นามสกุล" required autocomplete="off">
-        </div>
-        <div class="field">
           <label for="studentClass">ชั้นเรียน</label>
-          <select id="studentClass" required>
+          <select id="studentClass" required onchange="onClassChange()">
             <option value="">เลือกชั้นเรียน</option>
             <option value="ป.6/1">ป.6/1</option>
             <option value="ป.6/2">ป.6/2</option>
             <option value="ป.6/3">ป.6/3</option>
           </select>
         </div>
+        <div class="field">
+          <label for="studentSelect">ชื่อ-นามสกุล</label>
+          <select id="studentSelect" required disabled>
+            <option value="">เลือกชั้นเรียนก่อน</option>
+          </select>
+        </div>
         <button type="submit" class="btn btn-primary" id="loginBtn">เริ่มออกเดินทาง 🌊</button>
         <div class="error-msg" id="loginError"></div>
       </form>
-      <p class="hint">พิมพ์รหัสและชื่อให้ตรงกับที่คุณครูกำหนด เพื่อบันทึกคะแนนของคุณอย่างถูกต้อง</p>
+      <p class="hint">เลือกชั้นเรียนแล้วเลือกชื่อของตัวเอง เพื่อบันทึกคะแนนของคุณอย่างถูกต้อง</p>
       <p class="teacher-link">คุณครู? <button class="linklike" onclick="enterTeacherLogin()">เข้าสู่แดชบอร์ดคุณครู</button></p>
       </div>
     </div>
@@ -281,7 +298,7 @@ table.teacher-table{width:100%;border-collapse:collapse;font-size:13px;min-width
       <div class="stat-card"><div class="num" id="statCompleted">–</div><div class="lbl">ชุดที่ทำแล้ว</div></div>
       <div class="stat-card"><div class="num" id="statMastered">–</div><div class="lbl">ชุดที่เชี่ยวชาญ (≥80%)</div></div>
       <div class="stat-card"><div class="num" id="statAvg">–</div><div class="lbl">คะแนนเฉลี่ย</div></div>
-      <div class="stat-card"><div class="num" id="statTotal">40</div><div class="lbl">ชุดทั้งหมด</div></div>
+      <div class="stat-card"><div class="num" id="statTotal">–</div><div class="lbl">🪙 เปลือกหอยสะสม</div></div>
     </div>
     <div id="chapters"></div>
     <div class="loading" id="loadingMsg" style="display:none;"><div class="spinner"></div>กำลังโหลดความคืบหน้า...</div>
@@ -316,7 +333,7 @@ table.teacher-table{width:100%;border-collapse:collapse;font-size:13px;min-width
       <form id="teacherLoginForm" onsubmit="return handleTeacherLogin(event)">
         <div class="field">
           <label for="teacherPassword">รหัสผ่านคุณครู</label>
-          <input type="password" id="teacherPassword" placeholder="krujah2569" required autocomplete="off">
+          <input type="password" id="teacherPassword" placeholder="กรอกรหัสผ่าน" required autocomplete="off">
         </div>
         <button type="submit" class="btn btn-primary" id="teacherLoginBtn">เข้าสู่ระบบ</button>
         <div class="error-msg" id="teacherLoginError"></div>
@@ -353,6 +370,7 @@ table.teacher-table{width:100%;border-collapse:collapse;font-size:13px;min-width
           <option value="ป.6/3">ป.6/3</option>
         </select>
         <input type="text" id="filterSearch" placeholder="ค้นหาชื่อหรือรหัสนักเรียน..." oninput="renderStudentTable()">
+        <button class="btn btn-secondary btn-small" onclick="openRoster()">👥 จัดการรายชื่อนักเรียน</button>
       </div>
       <div class="teacher-table-wrap">
         <table class="teacher-table">
@@ -370,6 +388,33 @@ table.teacher-table{width:100%;border-collapse:collapse;font-size:13px;min-width
           <tbody id="studentTableBody"></tbody>
         </table>
         <div class="empty-state" id="tableEmptyState" style="display:none;">ยังไม่มีนักเรียนเข้าสู่ระบบ</div>
+      </div>
+    </div>
+
+    <div id="rosterSection" style="display:none;">
+      <div class="card">
+        <div class="detail-header">
+          <button class="btn btn-secondary btn-small" onclick="closeRoster()">← กลับรายชื่อ</button>
+          <div class="brand-title" style="font-size:16px;">จัดการรายชื่อนักเรียน</div>
+        </div>
+        <div class="filter-bar">
+          <input type="text" id="rosterId" placeholder="รหัสนักเรียน">
+          <input type="text" id="rosterName" placeholder="ชื่อ-นามสกุล">
+          <select id="rosterClass">
+            <option value="ป.6/1">ป.6/1</option>
+            <option value="ป.6/2">ป.6/2</option>
+            <option value="ป.6/3">ป.6/3</option>
+          </select>
+          <button class="btn btn-primary btn-small" onclick="addRosterStudentHandler()">+ เพิ่ม</button>
+        </div>
+        <div class="error-msg" id="rosterError"></div>
+        <div class="teacher-table-wrap">
+          <table class="teacher-table">
+            <thead><tr><th>รหัส</th><th>ชื่อ-นามสกุล</th><th>ชั้น</th><th></th></tr></thead>
+            <tbody id="rosterTableBody"></tbody>
+          </table>
+          <div class="empty-state" id="rosterEmptyState" style="display:none;">ยังไม่มีรายชื่อนักเรียน เพิ่มรายชื่อด้านบนได้เลย</div>
+        </div>
       </div>
     </div>
 
@@ -444,7 +489,14 @@ const API = {
     return postData(GAS_URL, { action:'saveScore', studentId, name, klass, set:setNum, score, total, ts:new Date().toISOString() });
   },
   teacherLogin(password){ return jsonp(GAS_URL, { action:'teacherLogin', password }); },
-  teacherData(password){ return jsonp(GAS_URL, { action:'teacherData', password }); }
+  teacherData(password){ return jsonp(GAS_URL, { action:'teacherData', password }); },
+  getRoster(){ return jsonp(GAS_URL, { action:'roster' }); },
+  addRosterStudent(password, studentId, name, klass){
+    return postData(GAS_URL, { action:'addRosterStudent', password, studentId, name, klass });
+  },
+  deleteRosterStudent(password, studentId){
+    return postData(GAS_URL, { action:'deleteRosterStudent', password, studentId });
+  }
 };
 
 /* ---- fraction helpers ---- */
@@ -456,6 +508,7 @@ function fracToHTML(f){
 }
 function operandHTML(q, key){ const o = q[key]; if(q.cat === 'whole') return `<span>${o.value}</span>`; return fracToHTML(o); }
 const OP_SYMBOL = { add:'+', sub:'−', mul:'×', div:'÷' };
+function pearlsForScore(score){ return score * 10; }
 function gcd(a,b){ a=Math.abs(a); b=Math.abs(b); while(b){[a,b]=[b,a%b];} return a || 1; }
 function normalizeFraction(whole, num, den){
   whole = parseInt(whole||0,10) || 0; num = parseInt(num||0,10) || 0; den = parseInt(den||1,10) || 1;
@@ -491,15 +544,61 @@ const OCEAN_SVG = `
 </svg>`;
 
 /* ===== LOGIN ===== */
+let rosterData = [];
+let rosterLoaded = false;
+
+async function loadRoster(){
+  try{
+    const res = await API.getRoster();
+    if(res && res.status === 'ok' && Array.isArray(res.roster)){
+      rosterData = res.roster;
+      rosterLoaded = true;
+    } else {
+      rosterData = [];
+    }
+  }catch(err){
+    console.warn('โหลดรายชื่อนักเรียนไม่สำเร็จ', err);
+    rosterData = [];
+  }
+  onClassChange();
+}
+
+function onClassChange(){
+  const klass = document.getElementById('studentClass').value;
+  const nameSelect = document.getElementById('studentSelect');
+  if(!nameSelect) return;
+  nameSelect.innerHTML = '';
+  if(!klass){
+    nameSelect.disabled = true;
+    nameSelect.innerHTML = '<option value="">เลือกชั้นเรียนก่อน</option>';
+    return;
+  }
+  if(!rosterLoaded){
+    nameSelect.disabled = true;
+    nameSelect.innerHTML = '<option value="">กำลังโหลดรายชื่อ...</option>';
+    return;
+  }
+  const list = rosterData.filter(s => s.klass === klass).sort((a,b) => String(a.name).localeCompare(String(b.name), 'th'));
+  if(list.length === 0){
+    nameSelect.disabled = true;
+    nameSelect.innerHTML = '<option value="">ยังไม่มีรายชื่อในชั้นนี้ กรุณาแจ้งครู</option>';
+    return;
+  }
+  nameSelect.disabled = false;
+  nameSelect.innerHTML = '<option value="">เลือกชื่อของคุณ</option>' +
+    list.map(s => `<option value="${escapeAttr(s.studentId)}">${escapeHtml(s.name)}</option>`).join('');
+}
+
 async function handleLogin(e){
   e.preventDefault();
   const btn = document.getElementById('loginBtn');
   const errEl = document.getElementById('loginError');
   errEl.textContent = '';
-  const studentId = document.getElementById('studentId').value.trim();
-  const name = document.getElementById('studentName').value.trim();
   const klass = document.getElementById('studentClass').value;
-  if(!studentId || !name || !klass){ errEl.textContent = 'กรุณากรอกข้อมูลให้ครบถ้วน'; return false; }
+  const nameSelect = document.getElementById('studentSelect');
+  const studentId = nameSelect.value;
+  const name = studentId ? nameSelect.options[nameSelect.selectedIndex].textContent : '';
+  if(!klass || !studentId){ errEl.textContent = 'กรุณาเลือกชั้นเรียนและชื่อของคุณให้ครบถ้วน'; return false; }
   btn.disabled = true; btn.textContent = 'กำลังเข้าสู่ระบบ...';
   try{
     const res = await API.login(studentId, name, klass);
@@ -555,6 +654,21 @@ function islandHTML(s){
   }
   return `<button class="${cls}" onclick="goToQuiz(${s.set})"><div class="disc">${s.set}</div><div class="setlabel">ชุด ${s.set}</div><div class="stars">${stars}</div></button>`;
 }
+let totalPearls = 0;
+function rankForPearls(p){
+  if(p >= 600) return { name:'กัปตันผู้เชี่ยวชาญ', icon:'⚓' };
+  if(p >= 300) return { name:'ต้นเรือ', icon:'🧭' };
+  if(p >= 100) return { name:'กะลาสี', icon:'⛵' };
+  return { name:'ลูกเรือฝึกหัด', icon:'🌊' };
+}
+function updateCaptainRank(){
+  const chip = document.querySelector('#topbar-user-dashboard .user-chip');
+  if(!chip) return;
+  let badge = chip.querySelector('.rank-badge');
+  if(!badge){ badge = document.createElement('span'); badge.className = 'rank-badge'; chip.appendChild(badge); }
+  const rank = rankForPearls(totalPearls);
+  badge.textContent = `${rank.icon} ${rank.name}`;
+}
 function updateOverview(){
   const setsDone = Object.keys(progressMap); const completed = setsDone.length;
   let mastered = 0, sumPct = 0;
@@ -562,6 +676,8 @@ function updateOverview(){
   document.getElementById('statCompleted').textContent = completed + '/40';
   document.getElementById('statMastered').textContent = mastered;
   document.getElementById('statAvg').textContent = completed ? Math.round(sumPct/completed) + '%' : '–';
+  document.getElementById('statTotal').textContent = totalPearls;
+  updateCaptainRank();
 }
 async function enterDashboard(){
   showView('dashboard');
@@ -573,7 +689,9 @@ async function enterDashboard(){
     const res = await API.getProgress(session.studentId);
     if(res && res.status === 'ok' && Array.isArray(res.records)){
       progressMap = {};
+      totalPearls = 0;
       res.records.forEach(r => {
+        totalPearls += pearlsForScore(Number(r.score));
         const setNum = Number(r.set); const existing = progressMap[setNum];
         if(!existing || (r.score/r.total) > (existing.score/existing.total)){
           progressMap[setNum] = { score:Number(r.score), total:Number(r.total) };
@@ -587,6 +705,13 @@ async function enterDashboard(){
 
 /* ===== QUIZ ===== */
 let quizSetNum = null, questions = [], current = 0, answers = [];
+let coins = 0, streak = 0;
+function coinsForStreak(s){
+  if(s >= 5) return 25;
+  if(s >= 3) return 20;
+  if(s >= 2) return 15;
+  return 10;
+}
 function goToQuiz(setNum){
   quizSetNum = setNum;
   const meta = getSetMeta(setNum);
@@ -600,6 +725,7 @@ function goToQuiz(setNum){
   document.getElementById('setTitle').textContent = meta.title;
   document.getElementById('setSub').textContent = 'ป.6 · การคิดคำนวณ';
   questions = getQuestionsForSet(setNum); current = 0; answers = [];
+  coins = 0; streak = 0;
   renderQuestion();
 }
 function renderQuestion(){
@@ -613,10 +739,14 @@ function renderQuestion(){
   ` : `<input type="number" id="ansWhole" placeholder="คำตอบ">`;
   document.getElementById('quizArea').innerHTML = `
     <div class="card">
-      <div class="quiz-head"><div class="quiz-title">ข้อที่ ${current+1} จาก ${questions.length}</div></div>
+      <div class="quiz-head">
+        <div class="quiz-title">ข้อที่ ${current+1} จาก ${questions.length}</div>
+        <div class="hud-coins" id="hudCoins">🪙 <span id="coinCount">${coins}</span></div>
+      </div>
       <div class="quiz-progress-bar"><div class="quiz-progress-fill" style="width:${pct}%"></div></div>
+      <div class="hud-streak-row"><span class="hud-streak ${streak>=2?'show':''}" id="hudStreak">🔥 ต่อเนื่อง x${streak}</span></div>
       <span class="diff-tag ${q.difficulty}">${q.difficulty === 'easy' ? 'ระดับง่าย' : 'ระดับปานกลาง'}</span>
-      <div class="problem">
+      <div class="problem" id="problemBox">
         <div class="expr">${operandHTML(q,'a')}<span class="opsign">${opSym}</span>${operandHTML(q,'b')}<span>=</span></div>
         <div class="answer-area">${answerInputHTML}</div>
         <div class="feedback" id="feedback"></div>
@@ -649,10 +779,30 @@ function submitAnswer(){
   const fb = document.getElementById('feedback');
   const correctAnsHTML = fracToHTML(q.answer);
   const correctAnsText = q.cat === 'whole' ? q.answer.value : null;
-  if(result.isCorrect){ fb.className = 'feedback correct'; fb.textContent = '✓ ถูกต้อง เก่งมาก!'; }
-  else {
+  if(result.isCorrect){
+    streak++;
+    const bonus = coinsForStreak(streak);
+    coins += bonus;
+    fb.className = 'feedback correct';
+    fb.innerHTML = streak >= 2
+      ? `✓ ถูกต้อง! 🔥 ต่อเนื่อง x${streak} <span class="coin-fly">+${bonus} 🪙</span>`
+      : `✓ ถูกต้อง เก่งมาก! <span class="coin-fly">+${bonus} 🪙</span>`;
+    const coinEl = document.getElementById('hudCoins');
+    document.getElementById('coinCount').textContent = coins;
+    coinEl.classList.remove('bump'); void coinEl.offsetWidth; coinEl.classList.add('bump');
+    const streakEl = document.getElementById('hudStreak');
+    if(streak >= 2){
+      streakEl.textContent = `🔥 ต่อเนื่อง x${streak}`;
+      streakEl.classList.remove('show'); void streakEl.offsetWidth; streakEl.classList.add('show');
+    }
+  } else {
+    streak = 0;
     fb.className = 'feedback wrong';
     fb.innerHTML = q.cat === 'whole' ? `✗ ยังไม่ถูก คำตอบคือ ${correctAnsText}` : `✗ ยังไม่ถูก คำตอบคือ ${correctAnsHTML}`;
+    const box = document.getElementById('problemBox');
+    box.classList.remove('shake'); void box.offsetWidth; box.classList.add('shake');
+    const streakEl = document.getElementById('hudStreak');
+    streakEl.classList.remove('show');
   }
   document.querySelectorAll('.answer-area input').forEach(i => i.disabled = true);
   btn.textContent = current === questions.length - 1 ? 'ดูผลคะแนน' : 'ข้อถัดไป →';
@@ -662,10 +812,13 @@ async function showResults(){
   const score = answers.filter(a => a.correct).length; const total = questions.length;
   const pct = Math.round((score/total)*100);
   const msg = pct >= 80 ? 'ยอดเยี่ยมมาก! เชี่ยวชาญแล้ว 🌟' : pct >= 60 ? 'ทำได้ดีมาก! ใกล้เชี่ยวชาญแล้ว 💪' : 'ฝึกฝนต่ออีกนิดนะ สู้ๆ 🌊';
+  const tierIcon = pct >= 80 ? '🥇' : pct >= 60 ? '🥈' : '🥉';
   const session = getSession();
   document.getElementById('quizArea').innerHTML = '';
   document.getElementById('resultArea').innerHTML = `
     <div class="card result-card">
+      <div class="tier-wrap">${tierIcon}</div>
+      <div class="coins-earned">เก็บเปลือกหอยได้ ${coins} 🪙 ในรอบนี้</div>
       <div class="score-ring" style="--pct:${pct}"><div class="inner"><div class="n">${score}/${total}</div><div class="t">${pct}%</div></div></div>
       <div class="result-msg">${msg}</div>
       <div class="result-sub">ชุดที่ ${quizSetNum} · ${getSetMeta(quizSetNum).groupTitle}</div>
@@ -681,7 +834,7 @@ async function showResults(){
   try{ await API.saveScore(session.studentId, session.name, session.klass, quizSetNum, score, total); }
   catch(err){ console.warn('บันทึกคะแนนไม่สำเร็จ', err); }
 }
-function retrySet(){ current = 0; answers = []; document.getElementById('resultArea').innerHTML = ''; renderQuestion(); }
+function retrySet(){ current = 0; answers = []; coins = 0; streak = 0; document.getElementById('resultArea').innerHTML = ''; renderQuestion(); }
 
 /* ===== TEACHER DASHBOARD ===== */
 function getTeacherPassword(){ return sessionStorage.getItem('kj_teacher_pw'); }
@@ -880,11 +1033,91 @@ function closeDetail(){
   document.getElementById('listSection').style.display = 'block';
 }
 
+/* ===== ROSTER MANAGEMENT ===== */
+let rosterList = [];
+
+async function openRoster(){
+  document.getElementById('listSection').style.display = 'none';
+  document.getElementById('rosterSection').style.display = 'block';
+  document.getElementById('rosterError').textContent = '';
+  await loadRosterForTeacher();
+}
+
+function closeRoster(){
+  document.getElementById('rosterSection').style.display = 'none';
+  document.getElementById('listSection').style.display = 'block';
+}
+
+async function loadRosterForTeacher(){
+  try{
+    const res = await API.getRoster();
+    rosterList = (res && res.status === 'ok' && Array.isArray(res.roster)) ? res.roster : [];
+  }catch(err){
+    rosterList = [];
+  }
+  renderRosterTable();
+}
+
+function renderRosterTable(){
+  const tbody = document.getElementById('rosterTableBody');
+  const emptyState = document.getElementById('rosterEmptyState');
+  const list = rosterList.slice().sort((a,b) => (a.klass||'').localeCompare(b.klass||'') || String(a.name||'').localeCompare(String(b.name||''), 'th'));
+  if(list.length === 0){
+    tbody.innerHTML = '';
+    emptyState.style.display = 'block';
+    return;
+  }
+  emptyState.style.display = 'none';
+  tbody.innerHTML = list.map(s => `
+    <tr>
+      <td>${escapeHtml(s.studentId)}</td>
+      <td class="tname">${escapeHtml(s.name)}</td>
+      <td>${escapeHtml(s.klass||'-')}</td>
+      <td><button class="btn btn-secondary btn-small" onclick="deleteRosterStudentHandler('${escapeAttr(s.studentId)}')">ลบ</button></td>
+    </tr>
+  `).join('');
+}
+
+async function addRosterStudentHandler(){
+  const errEl = document.getElementById('rosterError');
+  errEl.textContent = '';
+  const studentId = document.getElementById('rosterId').value.trim();
+  const name = document.getElementById('rosterName').value.trim();
+  const klass = document.getElementById('rosterClass').value;
+  if(!studentId || !name || !klass){ errEl.textContent = 'กรุณากรอกข้อมูลให้ครบถ้วน'; return; }
+  try{
+    const res = await API.addRosterStudent(getTeacherPassword(), studentId, name, klass);
+    if(res && res.status === 'ok'){
+      document.getElementById('rosterId').value = '';
+      document.getElementById('rosterName').value = '';
+      await loadRosterForTeacher();
+    } else {
+      errEl.textContent = (res && res.message) || 'เพิ่มรายชื่อไม่สำเร็จ';
+    }
+  }catch(err){
+    errEl.textContent = 'เกิดข้อผิดพลาด กรุณาลองใหม่';
+  }
+}
+
+async function deleteRosterStudentHandler(studentId){
+  if(!confirm('ต้องการลบนักเรียนคนนี้ออกจากรายชื่อใช่หรือไม่?')) return;
+  try{
+    const res = await API.deleteRosterStudent(getTeacherPassword(), studentId);
+    if(res && res.status === 'ok'){
+      await loadRosterForTeacher();
+    } else {
+      alert((res && res.message) || 'ลบไม่สำเร็จ');
+    }
+  }catch(err){
+    alert('เกิดข้อผิดพลาด กรุณาลองใหม่');
+  }
+}
+
 /* ===== BOOTSTRAP ===== */
 document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.ocean-bg').forEach(bg => bg.innerHTML = OCEAN_SVG);
   const s = getSession();
-  if(s) enterDashboard(); else showView('login');
+  if(s) enterDashboard(); else { showView('login'); loadRoster(); }
 });
 </script>
 
